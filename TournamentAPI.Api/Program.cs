@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TournamentAPI.Api.Extensions;
 using TournamentAPI.Data.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+await app.SeedDataAsync();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
