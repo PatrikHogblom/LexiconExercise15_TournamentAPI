@@ -1,18 +1,24 @@
 using Microsoft.EntityFrameworkCore;
 using TournamentAPI.Api.Extensions;
+using TournamentAPI.Core.Repositories;
 using TournamentAPI.Data.Data;
+using TournamentAPI.Data.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-// Add services to the container.
 builder.Services.AddDbContext<TournamentAPIContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("TournamentContext")
     ?? throw new InvalidOperationException("Connection string 'TournamentContext' not found.")));
 
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
 builder.Services.AddControllers(opt => opt.ReturnHttpNotAcceptable = true)
-    .AddNewtonsoftJson()
+    .AddNewtonsoftJson(options =>
+    {
+        options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+    })
     .AddXmlDataContractSerializerFormatters();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

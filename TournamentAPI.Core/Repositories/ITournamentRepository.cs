@@ -14,6 +14,6 @@ namespace TournamentAPI.Core.Repositories
         Task<bool> AnyAsync(int id);
         void Add(Tournament tournament);
         public void Update(Tournament tournament);
-        public void Remove(int id);
+        public void Remove(Tournament tournament);
     }
 }
