@@ -10,7 +10,7 @@ using TournamentAPI.Data.Data;
 
 namespace TournamentAPI.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/games")]
     [ApiController]
     public class GamesController : ControllerBase
     {
@@ -47,10 +47,13 @@ namespace TournamentAPI.Api.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutGame(int id, Game game)
         {
-            if (id != game.Id)
+            if (game == null)
             {
-                return BadRequest();
+                return BadRequest("Invalid data.");
             }
+
+            // Set the ID from the URL
+            game.Id = id;
 
             _context.Entry(game).State = EntityState.Modified;
 
