@@ -50,6 +50,30 @@ namespace TournamentAPI.Api.Controllers
             return Ok(gameDto);
         }
 
+        // GET: api/Games/Search?title=ExactTitle
+        [HttpGet("search")]
+        public async Task<ActionResult<GameDto>> GetGameByTitle(string? title)
+        {
+            IEnumerable<Game> games;
+
+            if (string.IsNullOrEmpty(title))
+            {
+                games = await _unitOfWork.GameRepository.GetAllAsync();
+            }
+            else
+            {
+                games = await _unitOfWork.GameRepository.GetAsyncByTitle(title);
+            }
+
+            if (games == null || !games.Any())
+            {
+                return NotFound();
+            }
+
+            var gamesDto = _mapper.Map<IEnumerable<GameDto>>(games);
+            return Ok(gamesDto);
+        }
+
         // PUT: api/Games/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]

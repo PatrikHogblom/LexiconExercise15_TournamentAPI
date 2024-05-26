@@ -37,6 +37,11 @@ namespace TournamentAPI.Data.Repositories
             return await _context.Games.FirstOrDefaultAsync(g => g.Id == id);
         }
 
+        public async Task<IEnumerable<Game>> GetAsyncByTitle(string title)
+        {
+            return await _context.Games.Where(g => g.Title == title).ToListAsync();
+        }
+
         public void Remove(Game game)
         {
             _context.Games.Remove(game);
