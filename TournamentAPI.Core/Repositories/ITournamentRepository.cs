@@ -11,6 +11,7 @@ namespace TournamentAPI.Core.Repositories
     {
         Task<IEnumerable<Tournament>> GetAllAsync();
         Task<Tournament> GetAsync(int id);
+        Task<Tournament> GetAsyncWithGames(int id);
         Task<bool> AnyAsync(int id);
         void Add(Tournament tournament);
         public void Update(Tournament tournament);

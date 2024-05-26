@@ -21,5 +21,7 @@ namespace TournamentAPI.Core.Dto
                 return StartDate.AddMonths(3);
             }
         }
+
+        public ICollection<GameDto> Games { get; set; }//need this to show games or not when get tournaments
     }
 }

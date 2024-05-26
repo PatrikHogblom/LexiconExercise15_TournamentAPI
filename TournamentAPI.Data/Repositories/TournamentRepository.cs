@@ -34,7 +34,12 @@ namespace TournamentAPI.Data.Repositories
 
         public async Task<Tournament> GetAsync(int id)
         {
-            return await _context.Tournaments.Include(t => t.Games).FirstOrDefaultAsync(t => t.Id == id);
+            return await _context.Tournaments.FirstOrDefaultAsync(t => t.Id == id);
+        }
+
+        public async Task<Tournament> GetAsyncWithGames(int id)
+        {
+            return await _context.Tournaments.Include(g => g.Games).FirstOrDefaultAsync(t => t.Id == id);
         }
 
         public void Remove(Tournament tournament)
