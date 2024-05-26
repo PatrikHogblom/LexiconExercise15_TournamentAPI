@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TournamentAPI.Core.Dto;
 using TournamentAPI.Core.Entities;
 using TournamentAPI.Core.Repositories;
 using TournamentAPI.Data.Data;
@@ -16,23 +18,25 @@ namespace TournamentAPI.Api.Controllers
     public class GamesController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public GamesController(IUnitOfWork unitOfWork)
+        public GamesController(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         // GET: api/Games
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Game>>> GetGames()
+        public async Task<ActionResult<IEnumerable<GameDto>>> GetGames()
         {
-            var games = await _unitOfWork.GameRepository.GetAllAsync();
-            return games.ToList();
+            var games = _mapper.Map<IEnumerable<GameDto>>(await _unitOfWork.GameRepository.GetAllAsync());
+            return Ok(games);
         }
         
         // GET: api/Games/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Game>> GetGame(int id)
+        public async Task<ActionResult<GameDto>> GetGame(int id)
         {
             var game = await _unitOfWork.GameRepository.GetAsync(id);
 
@@ -40,23 +44,24 @@ namespace TournamentAPI.Api.Controllers
             {
                 return NotFound();
             }
+            var gameDto = _mapper.Map<GameDto>(game);
 
-            return game;
+            return Ok(gameDto);
         }
-        
+
         // PUT: api/Games/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutGame(int id, Game game)
+        public async Task<IActionResult> PutGame(int id, GameDto gameDto)
         {
-            if (game == null)
+            if (gameDto == null)
             {
                 return BadRequest("Invalid data.");
             }
 
+            var game = _mapper.Map<Game>(gameDto);// Map DTO to entity
             // Set the ID from the URL
             game.Id = id;
-
             //_context.Entry(game).State = EntityState.Modified;
             _unitOfWork.GameRepository.Update(game);
 
@@ -72,7 +77,7 @@ namespace TournamentAPI.Api.Controllers
                 }
                 else
                 {
-                    throw;
+                    return StatusCode(500, "An Error occured while updating tournament database");
                 }
             }
 
@@ -82,8 +87,16 @@ namespace TournamentAPI.Api.Controllers
         // POST: api/Games
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Game>> PostGame(Game game)
+        public async Task<ActionResult<GameDto>> PostGame(GameDto gameDto)
         {
+            if(!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            //var tournamentExists = await _unitOfWork.TournamentRepository.AnyAsync(gameDto)
+
+            var game = _mapper.Map<Game>(gameDto);
             _unitOfWork.GameRepository.Add(game);
             try
             {
@@ -91,11 +104,15 @@ namespace TournamentAPI.Api.Controllers
             }
             catch (Exception ex)
             {
-                BadRequest(ex.Message);
+                return StatusCode(500, $"An error occured while saving the Game: {ex.Message}");
             }
 
-            return CreatedAtAction("GetGame", new { id = game.Id }, game);
+            var createdGameDto = _mapper.Map<GameDto>(game);
+
+            return CreatedAtAction("GetGame", new { id = createdGameDto.Id }, createdGameDto);
         }
+
+
         
         // DELETE: api/Games/5
         [HttpDelete("{id}")]
@@ -114,7 +131,7 @@ namespace TournamentAPI.Api.Controllers
             }
             catch (Exception ex)
             {
-                BadRequest(ex.Message);
+                return StatusCode(500, $"An error occured while deleting the game: {ex.Message}");
             }
 
             return NoContent();

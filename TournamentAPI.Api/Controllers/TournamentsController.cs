@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NuGet.Protocol;
+using TournamentAPI.Core.Dto;
 using TournamentAPI.Core.Entities;
 using TournamentAPI.Core.Repositories;
 using TournamentAPI.Data.Data;
@@ -16,29 +19,26 @@ namespace TournamentAPI.Api.Controllers
     [ApiController]
     public class TournamentsController : ControllerBase
     {
-        //private readonly TournamentAPIContext _context;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        /*public TournamentsController(TournamentAPIContext context)
-        {
-            _context = context;
-        }*/
-        public TournamentsController(IUnitOfWork unitOfWork)
+        public TournamentsController(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         // GET: api/Tournaments
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Tournament>>> GetTournaments()
+        public async Task<ActionResult<IEnumerable<TournamentDto>>> GetTournaments()
         {
-            var tournaments = await _unitOfWork.TournamentRepository.GetAllAsync();
-            return tournaments.ToList();
+            var tournamentDto = _mapper.Map<IEnumerable<TournamentDto>>(await _unitOfWork.TournamentRepository.GetAllAsync());
+            return Ok(tournamentDto);
         }
         
         // GET: api/Tournaments/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Tournament>> GetTournament(int id)
+        public async Task<ActionResult<TournamentDto>> GetTournament(int id)
         {
             var tournament = await _unitOfWork.TournamentRepository.GetAsync(id);
 
@@ -47,20 +47,24 @@ namespace TournamentAPI.Api.Controllers
                 return NotFound();
             }
 
-            return tournament;
+            var tournamentDto = _mapper.Map<TournamentDto>(tournament);
+
+            return Ok(tournamentDto);
         }
+        
         
         // PUT: api/Tournaments/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTournament(int id, Tournament tournament)
+        public async Task<IActionResult> PutTournament(int id, TournamentDto tournamentDto)
         {
-            if (id != tournament.Id)
+            if (id != tournamentDto.Id)
             {
                 return BadRequest();
             }
 
             //_context.Entry(tournament).State = EntityState.Modified;
+            var tournament = _mapper.Map<Tournament>(tournamentDto);// Map DTO to entity
             _unitOfWork.TournamentRepository.Update(tournament);
 
             try
@@ -75,7 +79,7 @@ namespace TournamentAPI.Api.Controllers
                 }
                 else
                 {
-                    throw;
+                    return StatusCode(500, "An Error occured while updating tournament database");
                 }
             }
 
@@ -86,19 +90,23 @@ namespace TournamentAPI.Api.Controllers
         // POST: api/Tournaments
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Tournament>> PostTournament(Tournament tournament)
+        public async Task<ActionResult<TournamentDto>> PostTournament(TournamentDto tournamentDto)
         {
+            var tournament = _mapper.Map<Tournament>(tournamentDto);// Map DTO to entity
             _unitOfWork.TournamentRepository.Add(tournament);
+
             try
             {
                 await _unitOfWork.CompleteAsync();
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(500, $"An error occured while saving the tournament: {ex.Message}");
             }
 
-            return CreatedAtAction("GetTournament", new { id = tournament.Id }, tournament);
+            var createdTournamentDto = _mapper.Map<TournamentDto>(tournament);// Map back to DTO
+
+            return CreatedAtAction("GetTournament", new { id = createdTournamentDto.Id }, createdTournamentDto);
         }
         
         // DELETE: api/Tournaments/5
@@ -118,13 +126,10 @@ namespace TournamentAPI.Api.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(500, $"An error occured while deleting the tournament: {ex.Message}");
             }
 
             return NoContent();
         }
-        
-        
-         
     }
 }
