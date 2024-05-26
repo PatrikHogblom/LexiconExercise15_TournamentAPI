@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using Azure;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NuGet.Protocol;
@@ -130,6 +132,44 @@ namespace TournamentAPI.Api.Controllers
             }
 
             return NoContent();
+        }
+
+        // PATCH: api/Tournaments/1
+        [HttpPatch("{tournamentId}")]
+        public async Task<ActionResult<TournamentDto>> PatchTournament(int tournamentId, JsonPatchDocument<TournamentDto> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return BadRequest("Invalid patch document");
+            }
+
+            var tournament = await _unitOfWork.TournamentRepository.GetAsync(tournamentId);
+            if (tournament == null)
+            {
+                return NotFound();
+            }
+
+            var tournamentDto = _mapper.Map<TournamentDto>(tournament);
+            patchDocument.ApplyTo(tournamentDto, ModelState);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            _mapper.Map(tournamentDto, tournament);
+
+            try
+            {
+                await _unitOfWork.CompleteAsync();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error ocuured while updating the tournament: {ex.Message}");
+            }
+
+            var updatedTournamentDto = _mapper.Map<TournamentDto>(tournament);
+            return Ok(updatedTournamentDto);
         }
     }
 }
